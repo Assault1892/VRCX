@@ -128,7 +128,8 @@ speechSynthesis.getVoices();
             isSteamVRRunning: false,
             isHmdAfk: false,
             appVersion: '',
-            latestAppVersion: ''
+            latestAppVersion: '',
+            shiftHeld: false
         },
         i18n,
         computed: {},
@@ -234,6 +235,12 @@ speechSynthesis.getVoices();
         e.preventDefault();
     });
 
+    document.addEventListener('keydown', function (e) {
+        if (e.shiftKey) {
+            $app.shiftHeld = true;
+        }
+    });
+
     document.addEventListener('keyup', function (e) {
         if (e.ctrlKey) {
             if (e.key === 'I') {
@@ -251,6 +258,10 @@ speechSynthesis.getVoices();
             $app.screenshotMetadataDialog?.visible
         ) {
             $app.screenshotMetadataCarouselChange(carouselNavigation);
+        }
+
+        if (!e.shiftKey) {
+            $app.shiftHeld = false;
         }
     });
 
@@ -329,8 +340,13 @@ speechSynthesis.getVoices();
             console.error('API.$on(USER) invalid args', args);
             return;
         }
-        $app.updateFriend({ id: args.json.id, state: args.json.state });
-        args.ref = this.applyUser(args.json);
+        if (args.json.state === 'online') {
+            args.ref = this.applyUser(args.json); // GPS
+            $app.updateFriend({ id: args.json.id, state: args.json.state }); // online/offline
+        } else {
+            $app.updateFriend({ id: args.json.id, state: args.json.state }); // online/offline
+            args.ref = this.applyUser(args.json); // GPS
+        }
     });
 
     API.$on('USER:LIST', function (args) {
@@ -487,6 +503,7 @@ speechSynthesis.getVoices();
         }
         if (typeof ref === 'undefined') {
             ref = {
+                ageVerificationStatus: '',
                 allowAvatarCopying: false,
                 badges: [],
                 bio: '',
@@ -1355,46 +1372,6 @@ speechSynthesis.getVoices();
                     userId: json.id
                 }
             });
-
-            var state = 'offline';
-            if (json.platform === 'web') {
-                state = 'active';
-            } else if (json.platform) {
-                state = 'online';
-            }
-            var ref = $app.friends.get(json.id);
-            if (ref?.state !== state) {
-                if ($app.debugFriendState) {
-                    console.log(
-                        `Bulk friend fetch, friend state does not match ${json.displayName} from ${ref?.state} to ${state}`,
-                        json
-                    );
-                }
-                this.getUser({
-                    userId: json.id
-                });
-            } else if (json.location === 'traveling') {
-                if ($app.debugFriendState) {
-                    console.log(
-                        'Bulk friend fetch, fetching traveling user',
-                        json
-                    );
-                }
-                this.getUser({
-                    userId: json.id
-                });
-            }
-
-            // if (
-            //     !args.params.offline &&
-            //     json.platform !== 'web' &&
-            //     json.location === 'offline'
-            // ) {
-            //     console.log('Fetching offline user', json);
-            //     this.getUser({
-            //         userId: json.id
-            //     });
-            // }
         }
     });
 
@@ -1403,9 +1380,18 @@ speechSynthesis.getVoices();
     API.refreshFriends = async function () {
         this.isRefreshFriendsLoading = true;
         try {
-            var onlineFriends = await this.refreshOnlineFriends();
-            var offlineFriends = await this.refreshOfflineFriends();
+            var onlineFriends = await this.bulkRefreshFriends({
+                offline: false
+            });
+            var offlineFriends = await this.bulkRefreshFriends({
+                offline: true
+            });
             var friends = onlineFriends.concat(offlineFriends);
+            friends = await this.refetchBrokenFriends(friends);
+            if (!$app.friendLogInitStatus) {
+                friends = await this.refreshRemainingFriends(friends);
+            }
+
             this.isRefreshFriendsLoading = false;
             return friends;
         } catch (err) {
@@ -1414,26 +1400,22 @@ speechSynthesis.getVoices();
         }
     };
 
-    API.refreshOnlineFriends = async function () {
+    API.bulkRefreshFriends = async function (params) {
         var friends = [];
         var params = {
+            ...params,
             n: 50,
-            offset: 0,
-            offline: false
+            offset: 0
         };
-        var N =
-            this.currentUser.onlineFriends.length +
-            this.currentUser.activeFriends.length;
-        var count = Math.trunc(N / 50);
-        mainLoop: for (var i = count; i > -1; i--) {
-            if (params.offset > 5000) {
-                // API offset limit is 5000
-                break;
-            }
+        // API offset limit is 5000
+        mainLoop: for (var i = 100; i > -1; i--) {
             retryLoop: for (var j = 0; j < 10; j++) {
                 // handle 429 ratelimit error, retry 10 times
                 try {
                     var args = await this.getFriends(params);
+                    if (!args.json || args.json.length === 0) {
+                        break mainLoop;
+                    }
                     friends = friends.concat(args.json);
                     break retryLoop;
                 } catch (err) {
@@ -1445,9 +1427,6 @@ speechSynthesis.getVoices();
                     if (err?.message?.includes('Not Found')) {
                         console.error('Awful workaround for awful VRC API bug');
                         break retryLoop;
-                    }
-                    if (j === 9) {
-                        throw err;
                     }
                     await new Promise((resolve) => {
                         workerTimers.setTimeout(resolve, 5000);
@@ -1459,48 +1438,60 @@ speechSynthesis.getVoices();
         return friends;
     };
 
-    API.refreshOfflineFriends = async function () {
-        var friends = [];
-        var params = {
-            n: 50,
-            offset: 0,
-            offline: true
-        };
-        var onlineCount =
-            this.currentUser.onlineFriends.length +
-            this.currentUser.activeFriends.length;
-        var N = this.currentUser.friends.length - onlineCount;
-        var count = Math.trunc(N / 50);
-        mainLoop: for (var i = count; i > -1; i--) {
-            if (params.offset > 5000) {
-                // API offset limit is 5000
-                break;
-            }
-            retryLoop: for (var j = 0; j < 10; j++) {
-                // handle 429 ratelimit error, retry 10 times
+    API.refreshRemainingFriends = async function (friends) {
+        for (var userId of this.currentUser.friends) {
+            if (!friends.some((x) => x.id === userId)) {
                 try {
-                    var args = await this.getFriends(params);
-                    friends = friends.concat(args.json);
-                    break retryLoop;
+                    console.log('Fetching remaining friend', userId);
+                    var args = await this.getUser({ userId });
+                    friends.push(args.json);
                 } catch (err) {
                     console.error(err);
-                    if (!API.currentUser.isLoggedIn) {
-                        console.error(`User isn't logged in`);
-                        break mainLoop;
-                    }
-                    if (err?.message?.includes('Not Found')) {
-                        console.error('Awful workaround for awful VRC API bug');
-                        break retryLoop;
-                    }
-                    if (j === 9) {
-                        throw err;
-                    }
-                    await new Promise((resolve) => {
-                        workerTimers.setTimeout(resolve, 5000);
-                    });
                 }
             }
-            params.offset += 50;
+        }
+        return friends;
+    };
+
+    API.refetchBrokenFriends = async function (friends) {
+        // attempt to broken data from bulk friend fetch
+        for (var i = 0; i < friends.length; i++) {
+            var friend = friends[i];
+            try {
+                // we don't update friend state here, it's not reliable
+                var state = 'offline';
+                if (friend.platform === 'web') {
+                    state = 'active';
+                } else if (friend.platform) {
+                    state = 'online';
+                }
+                var ref = $app.friends.get(friend.id);
+                if (ref?.state !== state) {
+                    if ($app.debugFriendState) {
+                        console.log(
+                            `Refetching friend state it does not match ${friend.displayName} from ${ref?.state} to ${state}`,
+                            friend
+                        );
+                    }
+                    var args = await this.getUser({
+                        userId: friend.id
+                    });
+                    friends[i] = args.json;
+                } else if (friend.location === 'traveling') {
+                    if ($app.debugFriendState) {
+                        console.log(
+                            'Refetching traveling friend',
+                            friend.displayName
+                        );
+                    }
+                    var args = await this.getUser({
+                        userId: friend.id
+                    });
+                    friends[i] = args.json;
+                }
+            } catch (err) {
+                console.error(err);
+            }
         }
         return friends;
     };
@@ -1877,7 +1868,7 @@ speechSynthesis.getVoices();
 
     API.$on('NOTIFICATION:LIST:HIDDEN', function (args) {
         for (var json of args.json) {
-            json.type = 'hiddenFriendRequest';
+            json.type = 'ignoredFriendRequest';
             this.$emit('NOTIFICATION', {
                 json,
                 params: {
@@ -1927,7 +1918,7 @@ speechSynthesis.getVoices();
         args.ref = ref;
         if (
             ref.type === 'friendRequest' ||
-            ref.type === 'hiddenFriendRequest' ||
+            ref.type === 'ignoredFriendRequest' ||
             ref.type.includes('.')
         ) {
             for (var i = array.length - 1; i >= 0; i--) {
@@ -1995,7 +1986,7 @@ speechSynthesis.getVoices();
         for (var i = array.length - 1; i >= 0; i--) {
             if (
                 array[i].type === 'friendRequest' ||
-                array[i].type === 'hiddenFriendRequest' ||
+                array[i].type === 'ignoredFriendRequest' ||
                 array[i].type.includes('.')
             ) {
                 array.splice(i, 1);
@@ -4490,7 +4481,7 @@ speechSynthesis.getVoices();
             ) {
                 if (this.debugFriendState) {
                     console.log(
-                        `Fetching offline friend in an instance ${ctx.name}`
+                        `Fetching offline friend in an instance from getCurrentUser ${ctx.name}`
                     );
                 }
                 API.getUser({
@@ -4505,6 +4496,10 @@ speechSynthesis.getVoices();
             ctx.isVIP = isVIP;
             if (typeof ref !== 'undefined') {
                 ctx.name = ref.displayName;
+            }
+            if (!this.friendLogInitStatus) {
+                this.updateFriendDelayedCheck(ctx, location, $location_at);
+                return;
             }
             // prevent status flapping
             if (ctx.pendingOffline) {
@@ -4547,7 +4542,21 @@ speechSynthesis.getVoices();
             ctx.isVIP = isVIP;
             if (typeof ref !== 'undefined') {
                 ctx.name = ref.displayName;
+
+                // wtf, from getCurrentUser only, fetch user if online in offline location
+                if (fromGetCurrentUser && stateInput === 'online') {
+                    if (this.debugFriendState) {
+                        console.log(
+                            `Fetching friend coming online from getCurrentUser ${ctx.name}`
+                        );
+                    }
+                    API.getUser({
+                        userId: id
+                    });
+                    return;
+                }
             }
+
             this.updateFriendDelayedCheck(ctx, location, $location_at);
         }
     };
@@ -4563,11 +4572,18 @@ speechSynthesis.getVoices();
             console.log(
                 `${ctx.name} updateFriendState ${ctx.state} -> ${newState}`
             );
-            if (location !== ctx.ref?.location) {
+            if (
+                typeof ctx.ref !== 'undefined' &&
+                location !== ctx.ref.location
+            ) {
                 console.log(
                     `${ctx.name} pendingOfflineLocation ${location} -> ${ctx.ref.location}`
                 );
             }
+        }
+        if (!this.friends.has(id)) {
+            console.log('Friend not found', id);
+            return;
         }
         var isVIP = this.localFavoriteFriends.has(id);
         var ref = ctx.ref;
@@ -4608,14 +4624,14 @@ speechSynthesis.getVoices();
                 ctx.ref.$online_for = Date.now();
                 ctx.ref.$offline_for = '';
                 ctx.ref.$active_for = '';
-                var worldName = await this.getWorldName(ref.location);
+                var worldName = await this.getWorldName(location);
                 var groupName = await this.getGroupName(location);
                 var feed = {
                     created_at: new Date().toJSON(),
                     type: 'Online',
                     userId: id,
                     displayName: ctx.name,
-                    location: ref.location,
+                    location,
                     worldName,
                     groupName,
                     time: ''
@@ -5446,7 +5462,11 @@ speechSynthesis.getVoices();
                 }
             }
             this.lastLocation.playerList.forEach((ref1) => {
-                if (ref1.userId && !API.cachedUsers.has(ref1.userId)) {
+                if (
+                    ref1.userId &&
+                    typeof ref1.userId === 'string' &&
+                    !API.cachedUsers.has(ref1.userId)
+                ) {
                     API.getUser({ userId: ref1.userId });
                 }
             });
@@ -5480,6 +5500,7 @@ speechSynthesis.getVoices();
             $app.applyGroupDialogInstances();
         }
         if (
+            !props.state &&
             props.location &&
             props.location[0] !== 'offline' &&
             props.location[0] !== '' &&
@@ -5491,7 +5512,7 @@ speechSynthesis.getVoices();
             var previousLocation = props.location[1];
             var newLocation = props.location[0];
             var time = props.location[2];
-            if (previousLocation === 'traveling') {
+            if (previousLocation === 'traveling' && ref.$previousLocation) {
                 previousLocation = ref.$previousLocation;
                 var travelTime = Date.now() - ref.$travelingToTime;
                 time -= travelTime;
@@ -5704,6 +5725,138 @@ speechSynthesis.getVoices();
             database.addBioToDatabase(feed);
         }
     });
+
+    /**
+     * Function that prepare the Longest Common Subsequence (LCS) scores matrix
+     * @param {*} s1 String 1
+     * @param {*} s2 String 2
+     * @returns
+     */
+    $app.methods.lcsMatrix = function (s1, s2) {
+        const m = s1.length;
+        const n = s2.length;
+        const dp = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+
+        // Fill the matrix for LCS
+        for (let i = 1; i <= m; i++) {
+            for (let j = 1; j <= n; j++) {
+                if (s1[i - 1] === s2[j - 1]) {
+                    dp[i][j] = dp[i - 1][j - 1] + 1;
+                } else {
+                    dp[i][j] = Math.max(dp[i - 1][j], dp[i][j - 1]);
+                }
+            }
+        }
+
+        return dp;
+    };
+
+    /**
+     * Function that find the differences between both strings, and return the differences and their position in the strings.
+     * @param {*} s1 String 1
+     * @param {*} s2 String 2
+     * @returns
+     */
+    $app.methods.findDifferences = function (s1, s2) {
+        const dp = $app.lcsMatrix(s1, s2);
+        const differencesS1 = [];
+        const differencesS2 = [];
+        let i = s1.length;
+        let j = s2.length;
+
+        // Backtrack to find differences
+        while (i > 0 && j > 0) {
+            if (s1[i - 1] === s2[j - 1]) {
+                i--;
+                j--;
+            } else if (dp[i - 1][j] >= dp[i][j - 1]) {
+                differencesS1.push({ index: i - 1, char: s1[i - 1] }); // Deletion in s1
+                i--;
+            } else {
+                differencesS2.push({ index: j - 1, char: s2[j - 1] }); // Insertion in s2
+                j--;
+            }
+        }
+
+        // Remaining characters in s1 (deletions)
+        while (i > 0) {
+            differencesS1.push({ index: i - 1, char: s1[i - 1] });
+            i--;
+        }
+
+        // Remaining characters in s2 (insertions)
+        while (j > 0) {
+            differencesS2.push({ index: j - 1, char: s2[j - 1] });
+            j--;
+        }
+
+        return {
+            differencesS1: differencesS1.reverse(), // Reverse to maintain original order
+            differencesS2: differencesS2.reverse()
+        };
+    };
+
+    $app.methods.findSequences = function (arr) {
+        if (arr.length === 0) return [];
+        return arr.reduce(
+            (p, c, i) => {
+                if (i === 0) return p;
+                let lastSeq = p.pop();
+                p.push(lastSeq);
+                if (c - lastSeq[1] !== 1) {
+                    p.push([c, c]);
+                } else {
+                    lastSeq[1] = c;
+                }
+                return p;
+            },
+            [[arr[0], arr[0]]]
+        );
+    };
+
+    /**
+     * Function that format the differences between two strings with HTML tags
+     * markerStartTag and markerEndTag are optional, if emitted, the differences will be highlighted with yellow and underlined.
+     * @param {*} s1
+     * @param {*} s2
+     * @param {*} markerStartTag
+     * @param {*} markerEndTag
+     * @returns An array that contains both the string 1 and string 2, which the differences are formatted with HTML tags
+     */
+    $app.methods.formatDifference = function (
+        s1,
+        s2,
+        markerStartTag = '<u><font color="yellow">',
+        markerEndTag = '</font></u>'
+    ) {
+        const texts = [s1, s2];
+        const differs = $app.findDifferences(s1, s2);
+        return Object.values(differs)
+            .map((i) => $app.findSequences(i.map((j) => j.index)))
+            .map((i, k) => {
+                let stringBuilder = [];
+                let lastPos = 0;
+                let key = Date.now();
+                i.forEach((j) => {
+                    stringBuilder.push(texts[k].substring(lastPos, j[0]));
+                    stringBuilder.push(
+                        `{{diffTag-${key}}}${texts[k].substring(j[0], j[1] + 1)}{{diffTagClose-${key}}}`
+                    );
+                    lastPos = j[1] + 1;
+                });
+                stringBuilder.push(texts[k].substr(lastPos, texts[k].length));
+                let returnVal = stringBuilder
+                    .join('')
+                    .replaceAll(/&/g, '&amp;')
+                    .replaceAll(/</g, '&lt;')
+                    .replaceAll(/>/g, '&gt;')
+                    .replaceAll(/"/g, '&quot;')
+                    .replaceAll(/'/g, '&#039;')
+                    .replaceAll(`{{diffTag-${key}}}`, markerStartTag)
+                    .replaceAll(`{{diffTagClose-${key}}}`, markerEndTag);
+                return returnVal;
+            });
+    };
 
     // #endregion
     // #region | App: gameLog
@@ -6862,8 +7015,8 @@ speechSynthesis.getVoices();
                 this.updateFriendship(ref);
             }
         }
-        if (typeof API.currentUser.friends !== 'undefined') {
-            this.updateFriendships(API.currentUser);
+        if (typeof currentUser.friends !== 'undefined') {
+            this.updateFriendships(currentUser);
         }
     };
 
@@ -7049,15 +7202,18 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.deleteFriendLog = function (row) {
-        // FIXME: 메시지 수정
+        $app.removeFromArray(this.friendLogTable.data, row);
+        database.deleteFriendLogHistory(row.rowId);
+    };
+
+    $app.methods.deleteFriendLogPrompt = function (row) {
         this.$confirm('Continue? Delete Log', 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    $app.removeFromArray(this.friendLogTable.data, row);
-                    database.deleteFriendLogHistory(row.rowId);
+                    this.deleteFriendLog(row);
                 }
             }
         });
@@ -7127,17 +7283,20 @@ speechSynthesis.getVoices();
     });
 
     $app.methods.deletePlayerModeration = function (row) {
-        // FIXME: 메시지 수정
-        this.$confirm('Continue? Delete Moderation', 'Confirm', {
+        API.deletePlayerModeration({
+            moderated: row.targetUserId,
+            type: row.type
+        });
+    };
+
+    $app.methods.deletePlayerModerationPrompt = function (row) {
+        this.$confirm(`Continue? Delete Moderation ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    API.deletePlayerModeration({
-                        moderated: row.targetUserId,
-                        type: row.type
-                    });
+                    this.deletePlayerModeration(row);
                 }
             }
         });
@@ -7250,7 +7409,7 @@ speechSynthesis.getVoices();
         if (ref.senderUserId !== this.currentUser.id) {
             if (
                 ref.type !== 'friendRequest' &&
-                ref.type !== 'hiddenFriendRequest' &&
+                ref.type !== 'ignoredFriendRequest' &&
                 !ref.type.includes('.')
             ) {
                 database.addNotificationToDatabase(ref);
@@ -7295,43 +7454,51 @@ speechSynthesis.getVoices();
     };
 
     $app.methods.hideNotification = function (row) {
+        if (row.type === 'ignoredFriendRequest') {
+            API.deleteHiddenFriendRequest(
+                {
+                    notificationId: row.id
+                },
+                row.senderUserId
+            );
+        } else {
+            API.hideNotification({
+                notificationId: row.id
+            });
+        }
+    };
+
+    $app.methods.hideNotificationPrompt = function (row) {
         this.$confirm(`Continue? Decline ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    if (row.type === 'hiddenFriendRequest') {
-                        API.deleteHiddenFriendRequest(
-                            {
-                                notificationId: row.id
-                            },
-                            row.senderUserId
-                        );
-                    } else {
-                        API.hideNotification({
-                            notificationId: row.id
-                        });
-                    }
+                    this.hideNotification(row);
                 }
             }
         });
     };
 
     $app.methods.deleteNotificationLog = function (row) {
+        $app.removeFromArray(this.notificationTable.data, row);
+        if (
+            row.type !== 'friendRequest' &&
+            row.type !== 'ignoredFriendRequest'
+        ) {
+            database.deleteNotification(row.id);
+        }
+    };
+
+    $app.methods.deleteNotificationLogPrompt = function (row) {
         this.$confirm(`Continue? Delete ${row.type}`, 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    $app.removeFromArray(this.notificationTable.data, row);
-                    if (
-                        row.type !== 'friendRequest' &&
-                        row.type !== 'hiddenFriendRequest'
-                    ) {
-                        database.deleteNotification(row.id);
-                    }
+                    this.deleteNotificationLog(row);
                 }
             }
         });
@@ -7443,6 +7610,7 @@ speechSynthesis.getVoices();
         },
         layout: 'table'
     };
+    $app.data.printTable = [];
     $app.data.stickerTable = [];
     $app.data.emojiTable = [];
     $app.data.VRCPlusIconsTable = [];
@@ -7626,6 +7794,10 @@ speechSynthesis.getVoices();
     $app.data.notificationTTS = await configRepository.getString(
         'VRCX_notificationTTS',
         'Never'
+    );
+    $app.data.notificationTTSNickName = await configRepository.getBool(
+        'VRCX_notificationTTSNickName',
+        false
     );
     $app.data.notificationTTSVoice = await configRepository.getString(
         'VRCX_notificationTTSVoice',
@@ -7811,6 +7983,10 @@ speechSynthesis.getVoices();
         await configRepository.setBool(
             'VRCX_afkDesktopToast',
             this.afkDesktopToast
+        );
+        await configRepository.setBool(
+            'VRCX_notificationTTSNickName',
+            this.notificationTTSNickName
         );
         await configRepository.setBool('VRCX_minimalFeed', this.minimalFeed);
         await configRepository.setBool(
@@ -8001,13 +8177,30 @@ speechSynthesis.getVoices();
     if (!(await VRCXStorage.Get('VRCX_ProxyServer'))) {
         await VRCXStorage.Set('VRCX_ProxyServer', '');
     }
+    if ((await VRCXStorage.Get('VRCX_DisableGpuAcceleration')) === '') {
+        await VRCXStorage.Set('VRCX_DisableGpuAcceleration', 'false');
+    }
+    if (
+        (await VRCXStorage.Get('VRCX_DisableVrOverlayGpuAcceleration')) === ''
+    ) {
+        await VRCXStorage.Set('VRCX_DisableVrOverlayGpuAcceleration', 'false');
+    }
     $app.data.proxyServer = await VRCXStorage.Get('VRCX_ProxyServer');
+    $app.data.disableGpuAcceleration =
+        (await VRCXStorage.Get('VRCX_DisableGpuAcceleration')) === 'true';
+    $app.data.disableVrOverlayGpuAcceleration =
+        (await VRCXStorage.Get('VRCX_DisableVrOverlayGpuAcceleration')) ===
+        'true';
     $app.data.disableWorldDatabase =
         (await VRCXStorage.Get('VRCX_DisableWorldDatabase')) === 'true';
     $app.methods.saveVRCXWindowOption = async function () {
         await configRepository.setBool(
             'VRCX_StartAtWindowsStartup',
             this.isStartAtWindowsStartup
+        );
+        await configRepository.setBool(
+            'VRCX_saveInstancePrints',
+            this.saveInstancePrints
         );
         VRCXStorage.Set(
             'VRCX_StartAsMinimizedState',
@@ -8017,6 +8210,14 @@ speechSynthesis.getVoices();
         VRCXStorage.Set(
             'VRCX_DisableWorldDatabase',
             this.disableWorldDatabase.toString()
+        );
+        VRCXStorage.Set(
+            'VRCX_DisableGpuAcceleration',
+            this.disableGpuAcceleration.toString()
+        );
+        VRCXStorage.Set(
+            'VRCX_DisableVrOverlayGpuAcceleration',
+            this.disableVrOverlayGpuAcceleration.toString()
         );
         AppApi.SetStartup(this.isStartAtWindowsStartup);
     };
@@ -8738,8 +8939,9 @@ speechSynthesis.getVoices();
         ) {
             var url = new URL(input);
             var urlPath = url.pathname;
-            if (urlPath.substring(5, 12) === '/world/') {
-                var worldId = urlPath.substring(12);
+            var urlPathSplit = urlPath.split('/');
+            if (urlPathSplit.length >= 4 && urlPathSplit[2] === 'world') {
+                var worldId = urlPathSplit[3];
                 this.showWorldDialog(worldId);
                 return true;
             } else if (urlPath.substring(5, 12) === '/launch') {
@@ -8807,16 +9009,21 @@ speechSynthesis.getVoices();
         if (input.startsWith('https://vrchat.')) {
             var url = new URL(input);
             var urlPath = url.pathname;
-            if (urlPath.substring(5, 11) === '/user/') {
-                var userId = urlPath.substring(11);
+            var urlPathSplit = urlPath.split('/');
+            if (urlPathSplit.length < 4) {
+                return false;
+            }
+            var type = urlPathSplit[2];
+            if (type === 'user') {
+                var userId = urlPathSplit[3];
                 this.showUserDialog(userId);
                 return true;
-            } else if (urlPath.substring(5, 13) === '/avatar/') {
-                var avatarId = urlPath.substring(13);
+            } else if (type === 'avatar') {
+                var avatarId = urlPathSplit[3];
                 this.showAvatarDialog(avatarId);
                 return true;
-            } else if (urlPath.substring(5, 12) === '/group/') {
-                var groupId = urlPath.substring(12);
+            } else if (type === 'group') {
+                var groupId = urlPathSplit[3];
                 this.showGroupDialog(groupId);
                 return true;
             }
@@ -9229,6 +9436,7 @@ speechSynthesis.getVoices();
         D.dateFriended = '';
         D.unFriended = false;
         D.dateFriendedInfo = [];
+        this.userDialogGroupEditMode = false;
         if (userId === API.currentUser.id) {
             this.getWorldName(API.currentUser.homeLocation).then(
                 (worldName) => {
@@ -11119,6 +11327,19 @@ speechSynthesis.getVoices();
             case 'New Instance':
                 this.showNewInstanceDialog(D.$location.tag);
                 break;
+            case 'New Instance and Self Invite':
+                this.newInstanceDialog.worldId = D.id;
+                this.createNewInstance().then((args) => {
+                    if (!args?.json?.location) {
+                        this.$message({
+                            message: 'Failed to create instance',
+                            type: 'error'
+                        });
+                        return;
+                    }
+                    this.selfInvite(args.json.location);
+                });
+                break;
             case 'Add Favorite':
                 this.showFavoriteDialog('world', D.id);
                 break;
@@ -11148,6 +11369,9 @@ speechSynthesis.getVoices();
                 break;
             case 'Change Tags':
                 this.showSetWorldTagsDialog();
+                break;
+            case 'Change Allowed Domains':
+                this.showWorldAllowedDomainsDialog();
                 break;
             case 'Download Unity Package':
                 this.openExternalLink(
@@ -11713,27 +11937,51 @@ speechSynthesis.getVoices();
             });
     };
 
-    $app.methods.addFavoriteWorld = function (ref, group) {
+    $app.methods.addFavoriteWorld = function (ref, group, message) {
         return API.addFavorite({
             type: 'world',
             favoriteId: ref.id,
             tags: group.name
+        }).then((args) => {
+            if (message) {
+                this.$message({
+                    message: 'World added to favorites',
+                    type: 'success'
+                });
+            }
+            return args;
         });
     };
 
-    $app.methods.addFavoriteAvatar = function (ref, group) {
+    $app.methods.addFavoriteAvatar = function (ref, group, message) {
         return API.addFavorite({
             type: 'avatar',
             favoriteId: ref.id,
             tags: group.name
+        }).then((args) => {
+            if (message) {
+                this.$message({
+                    message: 'Avatar added to favorites',
+                    type: 'success'
+                });
+            }
+            return args;
         });
     };
 
-    $app.methods.addFavoriteUser = function (ref, group) {
+    $app.methods.addFavoriteUser = function (ref, group, message) {
         return API.addFavorite({
             type: 'friend',
             favoriteId: ref.id,
             tags: group.name
+        }).then((args) => {
+            if (message) {
+                this.$message({
+                    message: 'Friend added to favorites',
+                    type: 'success'
+                });
+            }
+            return args;
         });
     };
 
@@ -12077,16 +12325,28 @@ speechSynthesis.getVoices();
         loading: false,
         selectedTab: '0',
         instanceCreated: false,
-        queueEnabled: false,
+        queueEnabled: await configRepository.getBool(
+            'instanceDialogQueueEnabled',
+            true
+        ),
         worldId: '',
         instanceId: '',
-        instanceName: '',
-        userId: '',
-        accessType: '',
-        region: '',
+        instanceName: await configRepository.getString(
+            'instanceDialogInstanceName',
+            ''
+        ),
+        userId: await configRepository.getString('instanceDialogUserId', ''),
+        accessType: await configRepository.getString(
+            'instanceDialogAccessType',
+            'public'
+        ),
+        region: await configRepository.getString('instanceRegion', ''),
         groupRegion: '',
-        groupId: '',
-        groupAccessType: '',
+        groupId: await configRepository.getString('instanceDialogGroupId', ''),
+        groupAccessType: await configRepository.getString(
+            'instanceDialogGroupAccessType',
+            'plus'
+        ),
         strict: false,
         location: '',
         shortName: '',
@@ -12208,7 +12468,7 @@ speechSynthesis.getVoices();
         this.saveNewInstanceDialog();
     };
 
-    $app.methods.createNewInstance = function () {
+    $app.methods.createNewInstance = async function () {
         var D = this.newInstanceDialog;
         if (D.loading) {
             return;
@@ -12260,19 +12520,20 @@ speechSynthesis.getVoices();
                 params.canRequestInvite = true;
             }
         }
-        API.createInstance(params)
-            .then((args) => {
-                D.location = args.json.location;
-                D.instanceId = args.json.instanceId;
-                D.secureOrShortName =
-                    args.json.shortName || args.json.secureName;
-                D.instanceCreated = true;
-                this.updateNewInstanceDialog();
-                return args;
-            })
-            .finally(() => {
-                D.loading = false;
-            });
+        try {
+            var args = await API.createInstance(params);
+            D.location = args.json.location;
+            D.instanceId = args.json.instanceId;
+            D.secureOrShortName = args.json.shortName || args.json.secureName;
+            D.instanceCreated = true;
+            this.updateNewInstanceDialog();
+            D.loading = false;
+            return args;
+        } catch (err) {
+            D.loading = false;
+            console.error(err);
+            return null;
+        }
     };
 
     $app.methods.selfInvite = function (location, shortName) {
@@ -12339,10 +12600,6 @@ speechSynthesis.getVoices();
             this.newInstanceDialog.groupAccessType
         );
         await configRepository.setBool(
-            'instanceDialogStrict',
-            this.newInstanceDialog.strict
-        );
-        await configRepository.setBool(
             'instanceDialogQueueEnabled',
             this.newInstanceDialog.queueEnabled
         );
@@ -12363,31 +12620,6 @@ speechSynthesis.getVoices();
             return;
         }
         D.worldId = L.worldId;
-        D.accessType = await configRepository.getString(
-            'instanceDialogAccessType',
-            'public'
-        );
-        D.region = await configRepository.getString(
-            'instanceRegion',
-            'US West'
-        );
-        D.instanceName = await configRepository.getString(
-            'instanceDialogInstanceName',
-            ''
-        );
-        D.userId = await configRepository.getString('instanceDialogUserId', '');
-        D.groupId = await configRepository.getString(
-            'instanceDialogGroupId',
-            ''
-        );
-        D.groupAccessType = await configRepository.getString(
-            'instanceDialogGroupAccessType',
-            'plus'
-        );
-        D.queueEnabled = await configRepository.getBool(
-            'instanceDialogQueueEnabled',
-            true
-        );
         D.instanceCreated = false;
         D.lastSelectedGroupId = '';
         D.selectedGroupRoles = [];
@@ -13427,6 +13659,7 @@ speechSynthesis.getVoices();
         };
         return this.call('file/image', {
             uploadImage: true,
+            matchingDimensions: true,
             postData: JSON.stringify(params),
             imageData
         }).then((json) => {
@@ -15618,7 +15851,7 @@ speechSynthesis.getVoices();
         this.VRChatConfigList = {
             cache_size: {
                 name: $t('dialog.config_json.max_cache_size'),
-                default: '20',
+                default: '30',
                 type: 'number',
                 min: 20
             },
@@ -15907,8 +16140,11 @@ speechSynthesis.getVoices();
                 // D.metadata.resolution = `${regex[18]}x${regex[19]}`;
             }
         }
+        if (metadata.timestamp) {
+            D.metadata.dateTime = Date.parse(metadata.timestamp);
+        }
         if (!D.metadata.dateTime) {
-            D.metadata.dateTime = Date.parse(json.creationDate);
+            D.metadata.dateTime = Date.parse(metadata.creationDate);
         }
 
         if (this.fullscreenImageDialog?.visible) {
@@ -16771,7 +17007,9 @@ speechSynthesis.getVoices();
             API.currentUserGroups.clear();
             args.json.forEach((group) => {
                 var ref = API.applyGroup(group);
-                API.currentUserGroups.set(group.id, ref);
+                if (!API.currentUserGroups.has(group.id)) {
+                    API.currentUserGroups.set(group.id, ref);
+                }
             });
             this.saveCurrentUserGroups();
         }
@@ -16818,15 +17056,45 @@ speechSynthesis.getVoices();
         API.currentUserGroups.clear();
         for (var group of args.json) {
             var ref = API.applyGroup(group);
-            API.currentUserGroups.set(group.id, ref);
+            if (!API.currentUserGroups.has(group.id)) {
+                API.currentUserGroups.set(group.id, ref);
+            }
         }
         await API.getGroupPermissions({ userId: API.currentUser.id });
         this.saveCurrentUserGroups();
     };
 
+    $app.data.inGameGroupOrder = [];
+
+    $app.methods.updateInGameGroupOrder = async function () {
+        this.inGameGroupOrder = [];
+        try {
+            var json = await AppApi.GetVRChatRegistryKey(
+                `VRC_GROUP_ORDER_${API.currentUser.id}`
+            );
+            this.inGameGroupOrder = JSON.parse(json);
+        } catch (err) {
+            console.error(err);
+        }
+    };
+
+    $app.methods.sortGroupsByInGame = function (a, b) {
+        var aIndex = this.inGameGroupOrder.indexOf(a?.id);
+        var bIndex = this.inGameGroupOrder.indexOf(b?.id);
+        if (aIndex === -1 && bIndex === -1) {
+            return 0;
+        }
+        if (aIndex === -1) {
+            return 1;
+        }
+        if (bIndex === -1) {
+            return -1;
+        }
+        return aIndex - bIndex;
+    };
+
     $app.methods.sortCurrentUserGroups = async function () {
         var D = this.userDialog;
-        var inGameGroupList = [];
         var sortMethod = function () {};
 
         switch (D.groupSorting.value) {
@@ -16837,34 +17105,85 @@ speechSynthesis.getVoices();
                 sortMethod = compareByMemberCount;
                 break;
             case 'inGame':
-                sortMethod = function (a, b) {
-                    var aIndex = inGameGroupList.indexOf(a?.id);
-                    var bIndex = inGameGroupList.indexOf(b?.id);
-                    if (aIndex === -1 && bIndex === -1) {
-                        return 0;
-                    }
-                    if (aIndex === -1) {
-                        return 1;
-                    }
-                    if (bIndex === -1) {
-                        return -1;
-                    }
-                    return aIndex - bIndex;
-                };
-                try {
-                    var json = await AppApi.GetVRChatRegistryKey(
-                        `VRC_GROUP_ORDER_${API.currentUser.id}`
-                    );
-                    inGameGroupList = JSON.parse(json);
-                } catch (err) {
-                    console.error(err);
-                }
+                sortMethod = this.sortGroupsByInGame;
+                await this.updateInGameGroupOrder();
                 break;
         }
 
         this.userGroups.ownGroups.sort(sortMethod);
         this.userGroups.mutualGroups.sort(sortMethod);
         this.userGroups.remainingGroups.sort(sortMethod);
+    };
+
+    $app.data.userDialogGroupEditMode = false;
+    $app.data.userDialogGroupEditGroups = [];
+
+    $app.methods.editModeCurrentUserGroups = async function () {
+        await this.updateInGameGroupOrder();
+        this.userDialogGroupEditGroups = Array.from(
+            API.currentUserGroups.values()
+        );
+        this.userDialogGroupEditGroups.sort(this.sortGroupsByInGame);
+        this.userDialogGroupEditMode = true;
+    };
+
+    $app.methods.exitEditModeCurrentUserGroups = async function () {
+        this.userDialogGroupEditMode = false;
+        this.userDialogGroupEditGroups = [];
+        await this.sortCurrentUserGroups();
+    };
+
+    $app.methods.moveGroupUp = function (groupId) {
+        var index = this.inGameGroupOrder.indexOf(groupId);
+        if (index > 0) {
+            this.inGameGroupOrder.splice(index, 1);
+            this.inGameGroupOrder.splice(index - 1, 0, groupId);
+            this.saveInGameGroupOrder();
+        }
+    };
+
+    $app.methods.moveGroupDown = function (groupId) {
+        var index = this.inGameGroupOrder.indexOf(groupId);
+        if (index < this.inGameGroupOrder.length - 1) {
+            this.inGameGroupOrder.splice(index, 1);
+            this.inGameGroupOrder.splice(index + 1, 0, groupId);
+            this.saveInGameGroupOrder();
+        }
+    };
+
+    $app.methods.moveGroupTop = function (groupId) {
+        var index = this.inGameGroupOrder.indexOf(groupId);
+        if (index > 0) {
+            this.inGameGroupOrder.splice(index, 1);
+            this.inGameGroupOrder.unshift(groupId);
+            this.saveInGameGroupOrder();
+        }
+    };
+
+    $app.methods.moveGroupBottom = function (groupId) {
+        var index = this.inGameGroupOrder.indexOf(groupId);
+        if (index < this.inGameGroupOrder.length - 1) {
+            this.inGameGroupOrder.splice(index, 1);
+            this.inGameGroupOrder.push(groupId);
+            this.saveInGameGroupOrder();
+        }
+    };
+
+    $app.methods.saveInGameGroupOrder = async function () {
+        this.userDialogGroupEditGroups.sort(this.sortGroupsByInGame);
+        try {
+            await AppApi.SetVRChatRegistryKey(
+                `VRC_GROUP_ORDER_${API.currentUser.id}`,
+                JSON.stringify(this.inGameGroupOrder),
+                3
+            );
+        } catch (err) {
+            console.error(err);
+            this.$message({
+                message: 'Failed to save in-game group order',
+                type: 'error'
+            });
+        }
     };
 
     // #endregion
@@ -16876,6 +17195,7 @@ speechSynthesis.getVoices();
     $app.data.galleryDialogIconsLoading = false;
     $app.data.galleryDialogEmojisLoading = false;
     $app.data.galleryDialogStickersLoading = false;
+    $app.data.galleryDialogPrintsLoading = false;
 
     API.$on('LOGIN', function () {
         $app.galleryTable = [];
@@ -16888,6 +17208,7 @@ speechSynthesis.getVoices();
         this.refreshVRCPlusIconsTable();
         this.refreshEmojiTable();
         this.refreshStickerTable();
+        this.refreshPrintTable();
         workerTimers.setTimeout(() => this.setGalleryTab(pageNum), 100);
     };
 
@@ -17022,6 +17343,7 @@ speechSynthesis.getVoices();
         };
         return this.call('file/image', {
             uploadImage: true,
+            matchingDimensions: false,
             postData: JSON.stringify(params),
             imageData
         }).then((json) => {
@@ -17133,6 +17455,7 @@ speechSynthesis.getVoices();
     API.uploadSticker = function (imageData, params) {
         return this.call('file/image', {
             uploadImage: true,
+            matchingDimensions: true,
             postData: JSON.stringify(params),
             imageData
         }).then((json) => {
@@ -17150,6 +17473,203 @@ speechSynthesis.getVoices();
             $app.stickerTable.unshift(args.json);
         }
     });
+
+    // #endregion
+    // #region | Prints
+    API.$on('LOGIN', function () {
+        $app.printTable = [];
+    });
+
+    $app.methods.refreshPrintTable = function () {
+        this.galleryDialogPrintsLoading = true;
+        var params = {
+            n: 100
+        };
+        API.getPrints(params);
+    };
+
+    API.getPrints = function (params) {
+        return this.call(`prints/user/${API.currentUser.id}`, {
+            method: 'GET',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('PRINT:LIST', args);
+            return args;
+        });
+    };
+
+    API.deletePrint = function (printId) {
+        return this.call(`prints/${printId}`, {
+            method: 'DELETE'
+        }).then((json) => {
+            var args = {
+                json,
+                printId
+            };
+            this.$emit('PRINT:DELETE', args);
+            return args;
+        });
+    };
+
+    API.$on('PRINT:LIST', function (args) {
+        $app.printTable = args.json;
+        $app.galleryDialogPrintsLoading = false;
+    });
+
+    $app.methods.deletePrint = function (printId) {
+        API.deletePrint(printId);
+    };
+
+    API.$on('PRINT:DELETE', function (args) {
+        var array = $app.printTable;
+        var { length } = array;
+        for (var i = 0; i < length; ++i) {
+            if (args.printId === array[i].id) {
+                array.splice(i, 1);
+                break;
+            }
+        }
+    });
+
+    $app.data.printUploadNote = '';
+
+    $app.methods.onFileChangePrint = function (e) {
+        var clearFile = function () {
+            if (document.querySelector('#PrintUploadButton')) {
+                document.querySelector('#PrintUploadButton').value = '';
+            }
+        };
+        var files = e.target.files || e.dataTransfer.files;
+        if (!files.length) {
+            return;
+        }
+        if (files[0].size >= 100000000) {
+            // 100MB
+            $app.$message({
+                message: 'File size too large',
+                type: 'error'
+            });
+            clearFile();
+            return;
+        }
+        if (!files[0].type.match(/image.*/)) {
+            $app.$message({
+                message: "File isn't an image",
+                type: 'error'
+            });
+            clearFile();
+            return;
+        }
+        var r = new FileReader();
+        r.onload = function () {
+            var date = new Date();
+            var timestamp = date.toISOString().slice(0, 19);
+            var params = {
+                note: $app.printUploadNote,
+                // worldId: '',
+                timestamp
+            };
+            var base64Body = btoa(r.result);
+            API.uploadPrint(base64Body, params).then((args) => {
+                $app.$message({
+                    message: 'Print uploaded',
+                    type: 'success'
+                });
+                return args;
+            });
+        };
+        r.readAsBinaryString(files[0]);
+        clearFile();
+    };
+
+    $app.methods.displayPrintUpload = function () {
+        document.getElementById('PrintUploadButton').click();
+    };
+
+    API.uploadPrint = function (imageData, params) {
+        return this.call('prints', {
+            uploadImagePrint: true,
+            postData: JSON.stringify(params),
+            imageData
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('PRINT:ADD', args);
+            return args;
+        });
+    };
+
+    API.$on('PRINT:ADD', function (args) {
+        if (Object.keys($app.printTable).length !== 0) {
+            $app.printTable.unshift(args.json);
+        }
+    });
+
+    API.getPrint = function (params) {
+        return this.call(`prints/${params.printId}`, {
+            method: 'GET'
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('PRINT', args);
+            return args;
+        });
+    };
+
+    API.editPrint = function (params) {
+        return this.call(`prints/${params.printId}`, {
+            method: 'POST',
+            params
+        }).then((json) => {
+            var args = {
+                json,
+                params
+            };
+            this.$emit('PRINT:EDIT', args);
+            return args;
+        });
+    };
+
+    $app.data.saveInstancePrints = await configRepository.getBool(
+        'VRCX_saveInstancePrints',
+        false
+    );
+
+    $app.methods.trySavePrintToFile = async function (printId) {
+        var print = await API.getPrint({ printId });
+        var imageUrl = print.json?.files?.image;
+        if (!imageUrl) {
+            console.error('Print image URL is missing', print);
+            return;
+        }
+        var createdAt = new Date();
+        if (print.json.timestamp) {
+            createdAt = new Date(print.json.timestamp);
+        } else if (print.json.createdAt) {
+            createdAt = new Date(print.json.createdAt);
+        }
+        var authorName = print.json.authorName;
+        // fileDate format: 2024-11-03_16-14-25.757
+        var fileNameDate = createdAt
+            .toISOString()
+            .replace(/:/g, '-')
+            .replace(/T/g, '_')
+            .replace(/Z/g, '');
+        var path = `${createdAt.toISOString().slice(0, 7)}`;
+        var fileName = `${authorName}_${fileNameDate}_${printId}.png`;
+        var status = await AppApi.SavePrintToFile(imageUrl, path, fileName);
+        if (status) {
+            console.log(`Print saved to file: ${path}\\${fileName}`);
+        }
+    };
 
     // #endregion
     // #region | Emoji
@@ -17253,6 +17773,7 @@ speechSynthesis.getVoices();
     API.uploadEmoji = function (imageData, params) {
         return this.call('file/image', {
             uploadImage: true,
+            matchingDimensions: true,
             postData: JSON.stringify(params),
             imageData
         }).then((json) => {
@@ -17991,27 +18512,30 @@ speechSynthesis.getVoices();
         return displayName;
     };
 
-    $app.methods.confirmDeleteGameLogUserInstance = function (row) {
-        this.$confirm('Continue? Delete', 'Confirm', {
-            confirmButtonText: 'Confirm',
-            cancelButtonText: 'Cancel',
-            type: 'info',
-            callback: (action) => {
-                if (action === 'confirm') {
-                    database.deleteGameLogInstance({
-                        id: this.previousInstancesUserDialog.userRef.id,
-                        displayName:
-                            this.previousInstancesUserDialog.userRef
-                                .displayName,
-                        location: row.location
-                    });
-                    $app.removeFromArray(
-                        this.previousInstancesUserDialogTable.data,
-                        row
-                    );
+    $app.methods.deleteGameLogUserInstance = function (row) {
+        database.deleteGameLogInstance({
+            id: this.previousInstancesUserDialog.userRef.id,
+            displayName: this.previousInstancesUserDialog.userRef.displayName,
+            location: row.location
+        });
+        $app.removeFromArray(this.previousInstancesUserDialogTable.data, row);
+    };
+
+    $app.methods.deleteGameLogUserInstancePrompt = function (row) {
+        this.$confirm(
+            'Continue? Delete User From GameLog Instance',
+            'Confirm',
+            {
+                confirmButtonText: 'Confirm',
+                cancelButtonText: 'Cancel',
+                type: 'info',
+                callback: (action) => {
+                    if (action === 'confirm') {
+                        this.deleteGameLogUserInstance(row);
+                    }
                 }
             }
-        });
+        );
     };
 
     // #endregion
@@ -18079,20 +18603,21 @@ speechSynthesis.getVoices();
         });
     };
 
-    $app.methods.confirmDeleteGameLogWorldInstance = function (row) {
-        this.$confirm('Continue? Delete', 'Confirm', {
+    $app.methods.deleteGameLogWorldInstance = function (row) {
+        database.deleteGameLogInstanceByInstanceId({
+            location: row.location
+        });
+        $app.removeFromArray(this.previousInstancesWorldDialogTable.data, row);
+    };
+
+    $app.methods.deleteGameLogWorldInstancePrompt = function (row) {
+        this.$confirm('Continue? Delete GameLog Instance', 'Confirm', {
             confirmButtonText: 'Confirm',
             cancelButtonText: 'Cancel',
             type: 'info',
             callback: (action) => {
                 if (action === 'confirm') {
-                    database.deleteGameLogInstanceByInstanceId({
-                        location: row.location
-                    });
-                    $app.removeFromArray(
-                        this.previousInstancesWorldDialogTable.data,
-                        row
-                    );
+                    this.deleteGameLogWorldInstance(row);
                 }
             }
         });
@@ -18737,7 +19262,8 @@ speechSynthesis.getVoices();
                 if (D.worldImportFavoriteGroup) {
                     await this.addFavoriteWorld(
                         ref,
-                        D.worldImportFavoriteGroup
+                        D.worldImportFavoriteGroup,
+                        false
                     );
                 } else if (D.worldImportLocalFavoriteGroup) {
                     this.addLocalWorldFavorite(
@@ -18976,7 +19502,8 @@ speechSynthesis.getVoices();
                 if (D.avatarImportFavoriteGroup) {
                     await this.addFavoriteAvatar(
                         ref,
-                        D.avatarImportFavoriteGroup
+                        D.avatarImportFavoriteGroup,
+                        false
                     );
                 } else if (D.avatarImportLocalFavoriteGroup) {
                     this.addLocalAvatarFavorite(
@@ -19205,7 +19732,11 @@ speechSynthesis.getVoices();
                     break;
                 }
                 var ref = data[i];
-                await this.addFavoriteUser(ref, D.friendImportFavoriteGroup);
+                await this.addFavoriteUser(
+                    ref,
+                    D.friendImportFavoriteGroup,
+                    false
+                );
                 $app.removeFromArray(this.friendImportTable.data, ref);
                 D.userIdList.delete(ref.id);
                 D.importProgress++;
@@ -19505,7 +20036,7 @@ speechSynthesis.getVoices();
     // #endregion
     // #region | App: bulk unfavorite
 
-    $app.data.bulkUnfavoriteMode = false;
+    $app.data.editFavoritesMode = false;
 
     $app.methods.showBulkUnfavoriteSelectionConfirm = function () {
         var elementsTicked = [];
@@ -19551,7 +20082,65 @@ speechSynthesis.getVoices();
                 objectId: id
             });
         }
-        this.bulkUnfavoriteMode = false;
+        this.editFavoritesMode = false;
+    };
+
+    $app.methods.bulkCopyFavoriteSelection = function () {
+        var idList = '';
+        var type = '';
+        for (var ctx of this.favoriteFriends) {
+            if (ctx.$selected) {
+                idList += ctx.id + '\n';
+                type = 'friend';
+            }
+        }
+        for (var ctx of this.favoriteWorlds) {
+            if (ctx.$selected) {
+                idList += ctx.id + '\n';
+                type = 'world';
+            }
+        }
+        for (var ctx of this.favoriteAvatars) {
+            if (ctx.$selected) {
+                idList += ctx.id + '\n';
+                type = 'avatar';
+            }
+        }
+        switch (type) {
+            case 'friend':
+                this.showFriendImportDialog();
+                this.friendImportDialog.input = idList;
+                this.processFriendImportList();
+                break;
+
+            case 'world':
+                this.showWorldImportDialog();
+                this.worldImportDialog.input = idList;
+                this.processWorldImportList();
+                break;
+
+            case 'avatar':
+                this.showAvatarImportDialog();
+                this.avatarImportDialog.input = idList;
+                this.processAvatarImportList();
+                break;
+
+            default:
+                break;
+        }
+        console.log('Favorite selection\n', idList);
+    };
+
+    $app.methods.clearBulkFavoriteSelection = function () {
+        for (var ctx of this.favoriteFriends) {
+            ctx.$selected = false;
+        }
+        for (var ctx of this.favoriteWorlds) {
+            ctx.$selected = false;
+        }
+        for (var ctx of this.favoriteAvatars) {
+            ctx.$selected = false;
+        }
     };
 
     // #endregion
@@ -21400,6 +21989,37 @@ speechSynthesis.getVoices();
     });
 
     // #endregion
+
+    $app.data.worldAllowedDomainsDialog = {
+        visible: false,
+        worldId: '',
+        urlList: []
+    };
+
+    $app.methods.showWorldAllowedDomainsDialog = function () {
+        this.$nextTick(() =>
+            $app.adjustDialogZ(this.$refs.worldAllowedDomainsDialog.$el)
+        );
+        var D = this.worldAllowedDomainsDialog;
+        D.worldId = this.worldDialog.id;
+        D.urlList = this.worldDialog.ref?.urlList ?? [];
+        D.visible = true;
+    };
+
+    $app.methods.saveWorldAllowedDomains = function () {
+        var D = this.worldAllowedDomainsDialog;
+        API.saveWorld({
+            id: D.worldId,
+            urlList: D.urlList
+        }).then((args) => {
+            this.$message({
+                message: 'Allowed Video Player Domains updated',
+                type: 'success'
+            });
+            return args;
+        });
+        D.visible = false;
+    };
 
     $app.data.ossDialog = false;
 
