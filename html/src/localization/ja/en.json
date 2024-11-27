@@ -81,40 +81,47 @@
             "prev_page": "前",
             "next_page": "次"
         },
-        "favorite": {
-            "friends": {
-                "header": "フレンド"
-            },
-            "worlds": {
-                "header": "ワールド",
-                "search": "検索",
-                "vrchat_favorites": "VRChatのお気に入り",
-                "local_favorites": "ローカルのお気に入り",
-                "new_group": "グループを作成"
-            },
-            "avatars": {
-                "header": "アバター",
-                "search": "検索",
-                "vrchat_favorites": "VRChatのお気に入り",
-                "local_favorites": "ローカルのお気に入り (VRC+が必要)",
-                "new_group": "グループを作成"
-            },
-            "bulk_unfavorite_mode": "一括お気に入り解除モード",
-            "bulk_unfavorite_selection": "お気に入り解除する",
-            "refresh_tooltip": "全てのお気に入りを更新",
-            "export": "エクスポート",
-            "import": "インポート",
-            "move_tooltip": "移動",
-            "unfavorite_tooltip": "お気に入り解除",
-            "visibility_tooltip": "表示設定を変更",
-            "rename_tooltip": "名前を変更",
-            "clear_tooltip": "クリア",
-            "delete_tooltip": "削除",
-            "unavailable_tooltip": "利用不可",
-            "private": "プライベート",
-            "sort_by": "並べ替え:",
-            "select_avatar_tooltip": "アバターを使用"
+      "favorite": {
+        "friends": {
+          "header": "フレンド"
         },
+        "worlds": {
+          "header": "ワールド",
+          "search": "検索",
+          "vrchat_favorites": "VRChatのお気に入り",
+          "local_favorites": "ローカルのお気に入り",
+          "new_group": "グループを作成",
+          "refresh": "更新",
+          "cancel_refresh": "更新をキャンセル"
+        },
+        "avatars": {
+          "header": "アバター",
+          "search": "検索",
+          "vrchat_favorites": "VRChatのお気に入り",
+          "local_favorites": "ローカルのお気に入り (VRC+が必要)",
+          "new_group": "グループを作成",
+          "refresh": "更新",
+          "cancel_refresh": "更新をキャンセル"
+        },
+        "edit_mode": "編集モード",
+        "copy": "コピー",
+        "clear": "クリア",
+        "bulk_unfavorite": "お気に入り解除",
+        "refresh_tooltip": "全てのお気に入りを更新",
+        "export": "エクスポート",
+        "import": "インポート",
+        "move_tooltip": "移動",
+        "copy_tooltip": "コピー",
+        "unfavorite_tooltip": "お気に入り解除",
+        "visibility_tooltip": "表示設定を変更",
+        "rename_tooltip": "名前を変更",
+        "clear_tooltip": "クリア",
+        "delete_tooltip": "削除",
+        "unavailable_tooltip": "利用不可",
+        "private": "プライベート",
+        "sort_by": "並べ替え:",
+        "select_avatar_tooltip": "アバターを使用"
+      },
         "friend_log": {
             "filter_placeholder": "フィルター",
             "search_placeholder": "検索"
@@ -213,13 +220,17 @@
                     "auto_update_download": "自動ダウンロード",
                     "change_log": "更新履歴"
                 },
-                "application": {
-                    "header": "アプリケーション",
-                    "startup": "Windowsと一緒に起動",
-                    "minimized": "最小化した状態で起動",
-                    "tray": "トレイに格納した状態で起動",
-                    "proxy": "プロキシ設定"
-                },
+              "application": {
+                "header": "アプリケーション",
+                "startup": "Windowsと一緒に起動",
+                "minimized": "最小化した状態で起動",
+                "tray": "トレイに格納した状態で起動",
+                "disable_gpu_acceleration": "GPUアクセラレーションを無効化",
+                "disable_gpu_acceleration_tooltip": "自分が何をしようとしているか分かっている場合のみ有効化してください。SteamVR オーバーレイのバグやUIの問題が修正されるかもしれません。VRCXの再起動が必要です。",
+                "disable_vr_overlay_gpu_acceleration": "VR オーバーレイのGPUアクセラレーションを無効化",
+                "disable_vr_overlay_gpu_acceleration_tooltip": "無効化することでVRAMのメモリリークやVRCXのクラッシュが修正されるかもしれません。VRCXの再起動が必要です。",
+                "proxy": "プロキシ設定"
+              },
                 "favorites": {
                     "header": "お気に入りのフレンド",
                     "group_placeholder": "グループを選択"
@@ -347,16 +358,17 @@
                         "when_to_display_always": "常に表示する",
                         "desktop_notification_while_afk": "AFK中でもデスクトップに通知"
                     },
-                    "text_to_speech": {
-                        "header": "Text-To-Speech",
-                        "when_to_play": "読み上げタイミング",
-                        "when_to_play_never": "読み上げない",
-                        "when_to_play_inside_vr": "VR中",
-                        "when_to_play_game_closed": "ゲーム終了時",
-                        "when_to_play_game_running": "ゲーム実行時",
-                        "when_to_play_always": "常に読み上げる",
-                        "tts_voice": "読み上げボイス"
-                    }
+                  "text_to_speech": {
+                    "header": "Text-To-Speech",
+                    "when_to_play": "読み上げタイミング",
+                    "when_to_play_never": "読み上げない",
+                    "when_to_play_inside_vr": "VR中",
+                    "when_to_play_game_closed": "ゲーム終了時",
+                    "when_to_play_game_running": "ゲーム実行時",
+                    "when_to_play_always": "常に読み上げる",
+                    "tts_voice": "読み上げボイス",
+                    "use_memo_nicknames": "メモのニックネームを使用"
+                  }
                 }
             },
             "wrist_overlay": {
@@ -398,100 +410,109 @@
                 }
             },
             "advanced": {
-                "advanced": {
-                    "header": "詳細設定",
-                    "launch_options": "起動オプション",
-                    "screenshot_metadata": "スクリーンショットのメタデータ",
-                    "vrc_registry_backup": "VRChatのレジストリをバックアップ",
-                    "common_folders": "共通フォルダ",
-                    "primary_password": {
-                        "header": "プライマリーパスワード",
-                        "description": "パスワードを暗号化 (自動ログイン無効化)"
-                    },
-                    "relaunch_vrchat": {
-                        "header": "VRChatがクラッシュした場合に自動再起動する",
-                        "description": "クラッシュ時、自動でインスタンスに再参加"
-                    },
-                    "vrchat_quit_fix": {
-                        "header": "VRChat終了時の挙動を修正する",
-                        "description": "ゲーム終了時、VRChatのプロセスを強制終了"
-                    },
-                    "auto_cache_management": {
-                        "header": "VRChat終了時にキャッシュを自動で管理する",
-                        "description": "旧バージョンのキャッシュを自動削除"
-                    },
-                    "local_world_persistence": {
-                        "header": "ローカルでのワールド永続化",
-                        "description": "Webサーバーをローカルでホストする (再起動が必要です)"
-                    },
-                    "remote_database": {
-                        "header": "リモートアバターデータベース",
-                        "enable": "有効化",
-                        "avatar_database_provider": "アバターデータベースプロバイダー"
-                    },
-                    "youtube_api": {
-                        "header": "Youtube API",
-                        "enable": "有効化",
-                        "youtube_api_key": "YouTube APIキー",
-                        "enable_tooltip": "ゲームログ用に動画のタイトルと、オーバーレイ用に動画の長さを取得する"
-                    },
-                    "video_progress_pie": {
-                        "header": "動画のプログレスをオーバーレイ表示",
-                        "enable": "有効化",
-                        "enable_tooltip": "使用するにはSteamVR オーバーレイが必要です。",
-                        "dance_world_only": "ダンスワールドのみ"
-                    },
-                    "screenshot_helper": {
-                        "header": "スクリーンショット ヘルパー",
-                        "description": "ゲーム内で撮影した写真のメタデータに「ワールドID」「ワールド名」「インスタンス内のプレイヤー」を保存します。",
-                        "description_tooltip": "残念ながら、Windowsは (ごく一部を除いて) PNGテキストチャンクの表示をサポートしていません。表示するにはEXIFToolのようなコマンドラインツールや、PNGチャンクインスペクター、またはHEX エディタを使用してください。",
-                        "enable": "有効化",
-                        "modify_filename": "ファイル名を変更",
-                        "modify_filename_tooltip": "スクリーンショットのファイル名にワールドIDを追加",
-                        "copy_to_clipboard": "クリップボードにコピー"
-                    },
-                    "app_launcher": {
-                        "header": "アプリケーションの自動起動",
-                        "folder": "フォルダー",
-                        "folder_tooltip": "VRChatと一緒に起動させたいアプリケーションのショートカットを配置してください。",
-                        "enable": "有効化",
-                        "auto_close": "VRChat終了時に自動終了"
-                    },
-                    "cache_debug": {
-                        "header": "VRCXインスタンス キャッシュ/デバッグ",
-                        "udon_exception_logging": "Udonの例外エラーを記録",
-                        "gpu_fix": "GPU Fixを有効化",
-                        "gpu_fix_notice": "(再起動が必要です)",
-                        "gpu_fix_warning": "SteamVR オーバーレイが機能せず、なおかつ2つ以上のGPUを使用している時のみこのオプションを有効化してください。",
-                        "disable_gamelog": "ゲームログを無効化",
-                        "disable_gamelog_notice": "(何かが壊れる可能性があります)",
-                        "user_cache": "ユーザーキャッシュ:",
-                        "world_cache": "ワールドキャッシュ:",
-                        "avatar_cache": "アバターキャッシュ:",
-                        "group_cache": "グループキャッシュ:",
-                        "avatar_name_cache": "アバター名キャッシュ:",
-                        "instance_cache": "インスタンスキャッシュ:",
-                        "clear_cache": "キャッシュを消去",
-                        "auto_clear_cache": "キャッシュの自動消去",
-                        "show_console": "コンソールを表示"
-                    },
-                    "sqlite_table_size": {
-                        "header": "SQLite テーブル数",
-                        "refresh": "更新",
-                        "gps": "GPS:",
-                        "status": "ステータス:",
-                        "bio": "自己紹介:",
-                        "avatar": "アバター:",
-                        "online_offline": "オンライン/オフライン:",
-                        "friend_log_history": "フレンドログ履歴:",
-                        "notification": "通知:",
-                        "location": "場所:",
-                        "join_leave": "参加/退出:",
-                        "portal_spawn": "ポータル作成:",
-                        "video_play": "動画再生:",
-                        "event": "イベント:"
-                    }
+              "advanced": {
+                "header": "詳細設定",
+                "launch_options": "起動オプション",
+                "screenshot_metadata": "スクリーンショットのメタデータ",
+                "vrc_registry_backup": "VRChatのレジストリをバックアップ",
+                "common_folders": "共通フォルダ",
+                "primary_password": {
+                  "header": "プライマリーパスワード",
+                  "description": "パスワードを暗号化 (自動ログイン無効化)"
                 },
+                "relaunch_vrchat": {
+                  "header": "VRChatがクラッシュした場合に自動再起動する",
+                  "description": "クラッシュ時、自動でインスタンスに再参加"
+                },
+                "vrchat_quit_fix": {
+                  "header": "VRChat終了時の挙動を修正する",
+                  "description": "ゲーム終了時、VRChatのプロセスを強制終了"
+                },
+                "auto_cache_management": {
+                  "header": "VRChat終了時にキャッシュを自動で管理する",
+                  "description": "旧バージョンのキャッシュを自動削除"
+                },
+                "local_world_persistence": {
+                  "header": "ローカルでのワールド永続化",
+                  "description": "Webサーバーをローカルでホストする (再起動が必要です)"
+                },
+                "save_instance_prints_to_file": {
+                  "header": "インスタンス内にあるプリント写真を保存",
+                  "header_tooltip": "VRChatの起動オプションに \"--enable-sdk-log-levels\" を設定する必要があります。",
+                  "description": "生成されたプリント写真をVRChatの写真フォルダ内に保存する"
+                },
+                "save_instance_stickers_to_file": {
+                  "header": "インスタンス内にあるステッカーを保存",
+                  "description": "貼り付けられたステッカー写真をVRChatの写真フォルダ内に保存する"
+                },
+                "remote_database": {
+                  "header": "リモートアバターデータベース",
+                  "enable": "有効化",
+                  "avatar_database_provider": "アバターデータベースプロバイダー"
+                },
+                "youtube_api": {
+                  "header": "Youtube API",
+                  "enable": "有効化",
+                  "youtube_api_key": "YouTube APIキー",
+                  "enable_tooltip": "ゲームログ用に動画のタイトルと、オーバーレイ用に動画の長さを取得する"
+                },
+                "video_progress_pie": {
+                  "header": "動画のプログレスをオーバーレイ表示",
+                  "enable": "有効化",
+                  "enable_tooltip": "使用するにはSteamVR オーバーレイが必要です。",
+                  "dance_world_only": "ダンスワールドのみ"
+                },
+                "screenshot_helper": {
+                  "header": "スクリーンショット ヘルパー",
+                  "description": "ゲーム内で撮影した写真のメタデータに「ワールドID」「ワールド名」「インスタンス内のプレイヤー」を保存します。",
+                  "description_tooltip": "残念ながら、Windowsは (ごく一部を除いて) PNGテキストチャンクの表示をサポートしていません。\n表示するにはEXIFToolのようなコマンドラインツールや、PNGチャンクインスペクター、またはHEX エディタを使用してください。",
+                  "enable": "有効化",
+                  "modify_filename": "ファイル名を変更",
+                  "modify_filename_tooltip": "スクリーンショットのファイル名にワールドIDを追加",
+                  "copy_to_clipboard": "クリップボードにコピー"
+                },
+                "app_launcher": {
+                  "header": "アプリケーションの自動起動",
+                  "folder": "フォルダー",
+                  "folder_tooltip": "VRChatと一緒に起動させたいアプリケーションのショートカットを配置してください。",
+                  "enable": "有効化",
+                  "auto_close": "VRChat終了時に自動終了"
+                },
+                "cache_debug": {
+                  "header": "VRCXインスタンス キャッシュ/デバッグ",
+                  "udon_exception_logging": "Udonの例外エラーを記録",
+                  "gpu_fix": "GPU Fixを有効化",
+                  "gpu_fix_notice": "(再起動が必要です)",
+                  "gpu_fix_warning": "SteamVR オーバーレイが機能せず、なおかつ2つ以上のGPUを使用している時のみこのオプションを有効化してください。",
+                  "disable_gamelog": "ゲームログを無効化",
+                  "disable_gamelog_notice": "(何かが壊れる可能性があります)",
+                  "user_cache": "ユーザーキャッシュ:",
+                  "world_cache": "ワールドキャッシュ:",
+                  "avatar_cache": "アバターキャッシュ:",
+                  "group_cache": "グループキャッシュ:",
+                  "avatar_name_cache": "アバター名キャッシュ:",
+                  "instance_cache": "インスタンスキャッシュ:",
+                  "clear_cache": "キャッシュを消去",
+                  "auto_clear_cache": "キャッシュの自動消去",
+                  "show_console": "コンソールを表示"
+                },
+                "sqlite_table_size": {
+                  "header": "SQLite テーブル数",
+                  "refresh": "更新",
+                  "gps": "GPS:",
+                  "status": "ステータス:",
+                  "bio": "自己紹介:",
+                  "avatar": "アバター:",
+                  "online_offline": "オンライン/オフライン:",
+                  "friend_log_history": "フレンドログ履歴:",
+                  "notification": "通知:",
+                  "location": "場所:",
+                  "join_leave": "参加/退出:",
+                  "portal_spawn": "ポータル作成:",
+                  "video_play": "動画再生:",
+                  "event": "イベント:"
+                }
+              },
                 "photon": {
                     "header": "Photon ログオーバーレイ",
                     "event_hud": {
@@ -535,144 +556,154 @@
         "pending_offline": "オフライン (保留)"
     },
     "dialog": {
-        "user": {
-            "status": {
-                "active": "アクティブ",
-                "offline": "オフライン",
-                "online": "オンライン",
-                "join_me": "参加歓迎",
-                "ask_me": "居場所を隠す",
-                "busy": "取り込み中"
-            },
-            "previous_display_names": "以前の表示名:",
-            "pronouns": "代名詞",
-            "tags": {
-                "friend_no": "フレンド No.{number}",
-                "vrchat_team": "VRChatのチーム"
-            },
-            "actions": {
-                "favorite_tooltip": "お気に入りに追加",
-                "unfavorite_tooltip": "お気に入りから削除",
-                "refresh": "更新",
-                "invite": "招待を送信",
-                "invite_with_message": "メッセージ付き招待を送信",
-                "request_invite": "招待リクエストを送信",
-                "request_invite_with_message": "メッセージ付き招待リクエストを送信",
-                "invite_to_group": "グループに招待",
-                "send_boop": "Boopを送信",
-                "manage_gallery_icon": "ギャラリー/アイコンを管理",
-                "accept_friend_request": "フレンドリクエストを許可",
-                "decline_friend_request": "フレンドリクエストを拒否",
-                "cancel_friend_request": "フレンドリクエストをキャンセル",
-                "send_friend_request": "フレンドリクエストを送信",
-                "show_avatar_author": "アバター制作者を表示",
-                "show_fallback_avatar": "フォールバックアバターの詳細を表示",
-                "show_previous_instances": "以前のインスタンス",
-                "show_previous_images": "以前の画像",
-                "moderation_block": "ブロック",
-                "moderation_unblock": "ブロック解除",
-                "moderation_mute": "ミュート",
-                "moderation_unmute": "ミュート解除",
-                "moderation_hide_avatar": "アバターを非表示",
-                "moderation_show_avatar": "アバターを表示",
-                "moderation_enable_avatar_interaction": "アバターインタラクションを有効化",
-                "moderation_disable_avatar_interaction": "アバターインタラクションを無効化",
-                "moderation_enable_chatbox": "チャットボックスをミュート解除",
-                "moderation_disable_chatbox": "チャットボックスをミュート",
-                "edit_status": "ソーシャルステータスを変更",
-                "edit_language": "言語を変更",
-                "edit_bio": "自己紹介を変更",
-                "edit_pronouns": "代名詞",
-                "report_hacking": "ハッキングを通報",
-                "unfriend": "フレンド解除",
-                "logout": "ログアウト"
-            },
-            "info": {
-                "header": "情報",
-                "launch_invite_tooltip": "起動/招待",
-                "self_invite_tooltip": "自分を招待",
-                "refresh_instance_info": "インスタンス情報を更新",
-                "instance_queue": "待機列:",
-                "instance_users": "ユーザー数:",
-                "instance_game_version": "ゲームバージョン:",
-                "last_join": "最後のJoin:",
-                "instance_queuing_enabled": "待機列使用可能",
-                "instance_creator": "インスタンス作成者",
-                "note": "ノート (VRChat)",
-                "note_placeholder": "クリックしてノートを追加",
-                "memo": "メモ (VRCX)",
-                "memo_placeholder": "クリックしてメモを追加",
-                "avatar_info": "アバター情報",
-                "avatar_info_last_seen": "最後に見たアバター情報",
-                "represented_group": "ネームプレートに表示中のグループ",
-                "bio": "自己紹介",
-                "last_seen": "最後に見た日時",
-                "join_count": "Joinした回数",
-                "time_together": "一緒に居た時間",
-                "play_time": "プレイ時間",
-                "online_for": "オンライン時間",
-                "offline_for": "オフライン時間",
-                "last_activity": "最終活動時間",
-                "last_login": "最終ログイン日",
-                "date_joined": "アカウント作成日",
-                "friended": "フレンドになった日",
-                "unfriended": "フレンド解除した日",
-                "avatar_cloning": "アバタークローン",
-                "booping": "Booping",
-                "avatar_cloning_allow": "許可",
-                "avatar_cloning_deny": "拒否",
-                "home_location": "ホームワールド",
-                "id": "ユーザーID",
-                "id_tooltip": "クリップボードにコピー",
-                "copy_id": "IDをコピー",
-                "copy_url": "URLをコピー",
-                "copy_display_name": "表示名をコピー",
-                "accuracy_notice": "ローカルデータベースからの情報であり、正確ではない可能性があります。",
-                "instance_full": "満員",
-                "instance_closed": "閉鎖済み",
-                "instance_hard_closed": "hard closed",
-                "close_instance": "インスタンスを閉じる"
-            },
-            "groups": {
-                "header": "グループ",
-                "total_count": "{count} 個のグループ",
-                "own_groups": "自分のグループ",
-                "mutual_groups": "共通グループ",
-                "groups": "グループ"
-            },
-            "worlds": {
-                "header": "ワールド",
-                "total_count": "{count} 個のワールド",
-                "sort_by": "並べ替え:",
-                "order_by": "表示順:",
-                "sorting": {
-                    "name": "名前",
-                    "updated": "更新日",
-                    "created": "作成日",
-                    "favorites": "お気に入り数",
-                    "popularity": "人気順"
-                },
-                "order": {
-                    "descending": "降順",
-                    "ascending": "昇順"
-                }
-            },
-            "favorite_worlds": {
-                "header": "お気に入りワールド"
-            },
-            "avatars": {
-                "header": "アバター",
-                "total_count": "{count} 個のアバター",
-                "sort_by_name": "名前順",
-                "sort_by_update": "更新順",
-                "all": "全て",
-                "public": "パブリック",
-                "private": "プライベート"
-            },
-            "json": {
-                "header": "JSON"
-            }
+      "user": {
+        "status": {
+          "active": "アクティブ",
+          "offline": "オフライン",
+          "online": "オンライン",
+          "join_me": "参加歓迎",
+          "ask_me": "居場所を隠す",
+          "busy": "取り込み中"
         },
+        "previous_display_names": "以前の表示名:",
+        "pronouns": "代名詞",
+        "tags": {
+          "friend_no": "フレンド No.{number}",
+          "vrchat_team": "VRChatのチーム"
+        },
+        "actions": {
+          "favorite_tooltip": "お気に入りに追加",
+          "unfavorite_tooltip": "お気に入りから削除",
+          "refresh": "更新",
+          "invite": "招待を送信",
+          "invite_with_message": "メッセージ付き招待を送信",
+          "request_invite": "招待リクエストを送信",
+          "request_invite_with_message": "メッセージ付き招待リクエストを送信",
+          "invite_to_group": "グループに招待",
+          "send_boop": "Boopを送信",
+          "manage_gallery_icon": "ギャラリー/アイコンを管理",
+          "accept_friend_request": "フレンドリクエストを許可",
+          "decline_friend_request": "フレンドリクエストを拒否",
+          "cancel_friend_request": "フレンドリクエストをキャンセル",
+          "send_friend_request": "フレンドリクエストを送信",
+          "show_avatar_author": "アバター制作者を表示",
+          "show_fallback_avatar": "フォールバックアバターの詳細を表示",
+          "show_previous_instances": "以前のインスタンス",
+          "show_previous_images": "以前の画像",
+          "moderation_block": "ブロック",
+          "moderation_unblock": "ブロック解除",
+          "moderation_mute": "ミュート",
+          "moderation_unmute": "ミュート解除",
+          "moderation_hide_avatar": "アバターを非表示",
+          "moderation_show_avatar": "アバターを表示",
+          "moderation_enable_avatar_interaction": "アバターインタラクションを有効化",
+          "moderation_disable_avatar_interaction": "アバターインタラクションを無効化",
+          "moderation_enable_chatbox": "チャットボックスをミュート解除",
+          "moderation_disable_chatbox": "チャットボックスをミュート",
+          "edit_status": "ソーシャルステータスを変更",
+          "edit_language": "言語を変更",
+          "edit_bio": "自己紹介を変更",
+          "edit_pronouns": "代名詞",
+          "report_hacking": "ハッキングを通報",
+          "unfriend": "フレンド解除",
+          "logout": "ログアウト"
+        },
+        "info": {
+          "header": "情報",
+          "launch_invite_tooltip": "起動/招待",
+          "self_invite_tooltip": "自分を招待",
+          "refresh_instance_info": "インスタンス情報を更新",
+          "instance_queue": "待機列:",
+          "instance_users": "ユーザー数:",
+          "instance_game_version": "ゲームバージョン:",
+          "last_join": "最後のJoin:",
+          "instance_queuing_enabled": "待機列使用可能",
+          "instance_creator": "インスタンス作成者",
+          "note": "ノート (VRChat)",
+          "note_placeholder": "クリックしてノートを追加",
+          "memo": "メモ (VRCX)",
+          "memo_placeholder": "クリックしてメモを追加",
+          "avatar_info": "アバター情報",
+          "avatar_info_last_seen": "最後に見たアバター情報",
+          "represented_group": "ネームプレートに表示中のグループ",
+          "bio": "自己紹介",
+          "last_seen": "最後に見た日時",
+          "join_count": "Joinした回数",
+          "time_together": "一緒に居た時間",
+          "play_time": "プレイ時間",
+          "online_for": "オンライン時間",
+          "offline_for": "オフライン時間",
+          "last_activity": "最終活動時間",
+          "last_login": "最終ログイン日",
+          "date_joined": "アカウント作成日",
+          "friended": "フレンドになった日",
+          "unfriended": "フレンド解除した日",
+          "avatar_cloning": "アバタークローン",
+          "booping": "Booping",
+          "avatar_cloning_allow": "許可",
+          "avatar_cloning_deny": "拒否",
+          "home_location": "ホームワールド",
+          "id": "ユーザーID",
+          "id_tooltip": "クリップボードにコピー",
+          "copy_id": "IDをコピー",
+          "copy_url": "URLをコピー",
+          "copy_display_name": "表示名をコピー",
+          "accuracy_notice": "ローカルデータベースからの情報であり、正確ではない可能性があります。",
+          "instance_full": "満員",
+          "instance_closed": "閉鎖済み",
+          "instance_hard_closed": "hard closed",
+          "close_instance": "インスタンスを閉じる"
+        },
+        "groups": {
+          "header": "グループ",
+          "total_count": "{count} 個のグループ",
+          "sort_by": "並べ替え:",
+          "edit_mode": "Edit Mode",
+          "exit_edit_mode": "Exit Edit Mode",
+          "hold_shift": "Hold shift to leave without confirmation",
+          "own_groups": "自分のグループ",
+          "mutual_groups": "共通グループ",
+          "groups": "グループ",
+          "sorting": {
+            "alphabetical": "Alphabetical",
+            "members": "Members",
+            "in_game": "In-Game Order"
+          },
+          "leave_group_tooltip": "Leave Group"
+        },
+        "worlds": {
+          "header": "ワールド",
+          "total_count": "{count} 個のワールド",
+          "sort_by": "並べ替え:",
+          "order_by": "表示順:",
+          "sorting": {
+            "name": "名前",
+            "updated": "更新日",
+            "created": "作成日",
+            "favorites": "お気に入り数",
+            "popularity": "人気順"
+          },
+          "order": {
+            "descending": "降順",
+            "ascending": "昇順"
+          }
+        },
+        "favorite_worlds": {
+          "header": "お気に入りワールド"
+        },
+        "avatars": {
+          "header": "アバター",
+          "total_count": "{count} 個のアバター",
+          "sort_by_name": "名前順",
+          "sort_by_update": "更新順",
+          "all": "全て",
+          "public": "パブリック",
+          "private": "プライベート"
+        },
+        "json": {
+          "header": "JSON"
+        }
+      },
         "world": {
             "tags": {
                 "public": "パブリック",
@@ -886,7 +917,7 @@
                 "all_members": "全員",
                 "friends_only": "フレンドのみ",
                 "load_more": "もっと見る...",
-                "sort_by": "ソート順:",
+                "sort_by": "並べ替え:",
                 "sorting": {
                     "user_id": "ユーザーID (登順)",
                     "joined_at_asc": "参加順 (昇順)",
