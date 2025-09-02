@@ -1025,8 +1025,8 @@
                 "time_spent": "過ごした時間",
                 "memo": "メモ (VRCX)",
                 "memo_placeholder": "クリックしてメモを追加",
-                "listings": "Listings",
-                "gallery": "Gallery"
+                "listings": "リスト",
+                "gallery": "ギャラリー"
             },
             "json": {
                 "header": "JSON",
@@ -1323,7 +1323,8 @@
             "start_as_desktop": "デスクトップモードで起動 (VR無し)",
             "info": "情報",
             "invite": "招待",
-            "launch": "起動"
+            "launch": "起動",
+            "open_ingame": "ゲームで開く"
         },
         "export_friends_list": {
             "header": "フレンドリスト",
@@ -1418,7 +1419,8 @@
             "choose_group_placeholder": "グループを選択",
             "groups": "グループ",
             "choose_friends_placeholder": "フレンドを選択",
-            "selected_users": "選択したユーザー"
+            "selected_users": "選択したユーザー",
+            "invite": "招待"
         },
         "note_export": {
             "header": "ノートをエクスポート",
@@ -1498,10 +1500,10 @@
             "emoji_animation_fps": "FPS:",
             "emoji_animation_frame_count": "フレーム数:",
             "emoji_loop_pingpong": "Loop PingPong",
-            "consume_bundle": "バンドルを消費",
             "flipbook_info": "アニメーション絵文字として使用する1024x1024pxのPNGスプライトシート画像を選択 (最大 64FPS)",
             "note": "ノート",
-            "crop_print_border": "Crop Print Border"
+            "crop_print_border": "プリントの枠を切り取る",
+            "consume_bundle": "バンドルを消費"
         },
         "change_content_image": {
             "avatar": "アバターの画像を変更",
@@ -1549,6 +1551,7 @@
             "last_screenshot": "最後に見た画像",
             "copy_image": "画像をコピー",
             "open_folder": "フォルダを開く",
+            "delete_metadata": "メタデータを削除",
             "upload": "アップロード"
         },
         "registry_backup": {
@@ -1563,6 +1566,7 @@
             "date": "日付",
             "action": "アクション",
             "auto_backup": "毎週の自動バックアップ",
+            "ask_to_restore": "Ask to restore when no VRC registry settings are present",
             "restore_prompt": "VRChatのレジストリ設定の自動バックアップが有効なようですが、このコンピューターからバックアップファイルを見つけられませんでした。バックアップから復元したい場合はこちらから復元できます。"
         },
         "group_member_moderation": {
