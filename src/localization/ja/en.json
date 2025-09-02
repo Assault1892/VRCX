@@ -632,7 +632,7 @@
                         "folder_tooltip": "VRChatと一緒に起動させたいアプリケーションのショートカットを配置してください。",
                         "enable": "有効化する",
                         "auto_close": "VRChat終了時に自動終了",
-                        "run_process_once": "Open single instance of app"
+                        "run_process_once": "アプリを1個だけ開く"
                     },
                     "cache_debug": {
                         "header": "VRCXインスタンス キャッシュ/デバッグ",
@@ -733,7 +733,9 @@
             "pronouns": "代名詞",
             "tags": {
                 "friend_no": "フレンド No.{number}",
-                "vrchat_team": "VRChatの運営"
+                "vrchat_team": "VRChatの運営",
+                "18_plus_verified": "成人確認済み",
+                "age_verified": "年齢確認済み"
             },
             "badges": {
                 "assigned": "授与済",
@@ -750,6 +752,7 @@
                 "request_invite": "招待リクエストを送信",
                 "request_invite_with_message": "メッセージ付き招待リクエストを送信",
                 "invite_to_group": "グループに招待",
+                "group_moderation": "グループ管理",
                 "send_boop": "Boopを送信",
                 "manage_gallery_inventory_icon": "ギャラリー/アイコンを管理",
                 "accept_friend_request": "フレンドリクエストを許可",
@@ -782,6 +785,7 @@
                 "header": "情報",
                 "launch_invite_tooltip": "起動/招待",
                 "self_invite_tooltip": "自分を招待",
+                "open_in_vrchat_tooltip": "VRChatで開く",
                 "refresh_instance_info": "インスタンス情報を更新",
                 "instance_queue": "待機列:",
                 "instance_users": "ユーザー数:",
@@ -903,6 +907,7 @@
                 "share": "共有",
                 "new_instance": "インスタンスを作成",
                 "new_instance_and_self_invite": "インスタンスを作成し、自分を招待する",
+                "new_instance_and_open_in_vrchat": "インスタンスを作成し、VRChatを起動する",
                 "make_home": "ホームに設定",
                 "reset_home": "ホームをリセット",
                 "show_previous_instances": "以前のインスタンス",
@@ -1019,7 +1024,9 @@
                 "platform": "プラットフォーム",
                 "time_spent": "過ごした時間",
                 "memo": "メモ (VRCX)",
-                "memo_placeholder": "クリックしてメモを追加"
+                "memo_placeholder": "クリックしてメモを追加",
+                "listings": "Listings",
+                "gallery": "Gallery"
             },
             "json": {
                 "header": "JSON",
