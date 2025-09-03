@@ -1324,7 +1324,11 @@
             "info": "情報",
             "invite": "招待",
             "launch": "起動",
-            "open_ingame": "ゲームで開く"
+            "open_ingame": "ゲームで開く",
+            "self_invite": "Self Invite",
+            "game_running_warning": "Are you sure you want to launch a second VRChat instance?",
+            "confirm_yes": "Yes",
+            "confirm_no": "No"
         },
         "export_friends_list": {
             "header": "フレンドリスト",
@@ -1566,7 +1570,7 @@
             "date": "日付",
             "action": "アクション",
             "auto_backup": "毎週の自動バックアップ",
-            "ask_to_restore": "Ask to restore when no VRC registry settings are present",
+            "ask_to_restore": "VRChatのレジストリ設定が存在しない場合復元するか聞く",
             "restore_prompt": "VRChatのレジストリ設定の自動バックアップが有効なようですが、このコンピューターからバックアップファイルを見つけられませんでした。バックアップから復元したい場合はこちらから復元できます。"
         },
         "group_member_moderation": {
@@ -1611,6 +1615,7 @@
             "select_user": "ユーザーを選択",
             "selected_users": "選択したユーザー",
             "select_all": "全て選択",
+            "user_isnt_in_group": "ユーザーはグループにいません",
             "cancel": "キャンセル",
             "choose_roles_placeholder": "ロールを選択",
             "selected_roles": "選択したロール",
@@ -1644,6 +1649,15 @@
             "header": "ビデオプレーヤーでの使用が許可されているのドメイン",
             "add_domain": "ドメイン追加",
             "save": "保存"
+        },
+        "group_calendar": {
+            "header": "グループカレンダー"
+        },
+        "moderate_group": {
+            "header": "Moderate Group Member",
+            "choose_group_placeholder": "Choose Group",
+            "groups_with_moderation_permission": "Groups with Moderation Permission",
+            "moderation_tools": "Moderation Tools"
         }
     },
     "confirm": {
@@ -1712,6 +1726,10 @@
         },
         "friend": {
             "load_failed": "フレンドリストの読み込みに失敗しました、ログアウトしています"
+        },
+        "screenshot_metadata": {
+            "deleted": "Screenshot metadata deleted",
+            "delete_failed": "Failed to delete screenshot metadata"
         }
     },
     "prompt": {
