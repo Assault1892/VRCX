@@ -1413,6 +1413,7 @@
                 "instance_age_restricted_tooltip": "年齢制限のあるインスタンス",
                 "close_instance": "インスタンスを閉じる",
                 "instance_age_gated": "年齢制限あり",
+                "instance_role_restricted": "Role Restricted",
                 "open_previous_instance": "前回のインスタンスを開く",
                 "show_mutual_friends": "共通のフレンドを公開",
                 "show_discord_connections": "連携した Discord を公開",
@@ -1731,7 +1732,9 @@
                 "moderation_tools": "管理用ツール",
                 "leave": "グループから抜ける",
                 "block": "グループをブロック",
-                "unblock": "グループのブロックを解除"
+                "unblock": "グループのブロックを解除",
+                "unsubscribe_event": "Unsubscribe From Event Announcements",
+                "subscribe_event": "Subscribe To Event Announcements"
             },
             "info": {
                 "header": "情報",
@@ -1852,6 +1855,7 @@
             "content_drones": "ドローン",
             "content_items": "アイテム",
             "content_third_person": "三人称視点",
+            "content_prop_movement": "Props that Modify Player Movement",
             "world_id": "ワールドID",
             "instance_id": "インスタンスID",
             "instance_id_placeholder": "ランダム",
@@ -2345,7 +2349,8 @@
                 "description": "このイベントについて",
                 "export_to_calendar": "カレンダーにエクスポート",
                 "download_ics": ".ics ファイルをダウンロード",
-                "copied_event_link": "イベント URL をクリップボードにコピー"
+                "copied_event_link": "イベント URL をクリップボードにコピー",
+                "repeating_event_tooltip": "Repeating Event"
             },
             "featured_events": "注目のイベント"
         },
@@ -2733,7 +2738,8 @@
             "joined": "グループに参加しました",
             "join_request_sent": "グループ参加リクエストが送信されました",
             "visibility_updated": "グループの可視性が更新されました",
-            "subscription_updated": "グループの購読が更新されました"
+            "subscription_updated": "グループの購読が更新されました",
+            "event_announcement_updated": "Group event announcements updated"
         },
         "invite": {
             "self_sent": "自分を招待しました",
@@ -2832,6 +2838,8 @@
         "trust_level": "トラストレベルが {trustLevel} になりました",
         "display_name": "の表示名が {displayName} に変更されました",
         "group_announcement_title": "グループのお知らせ",
+        "group_event_created_title": "Group Event Created",
+        "group_event_starting_title": "Group Event Starting",
         "group_informative_title": "グループのインフォメーション",
         "group_invite_title": "グループへの招待",
         "group_join_request_title": "グループ参加リクエスト",
